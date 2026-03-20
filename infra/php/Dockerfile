@@ -1,4 +1,4 @@
-FROM php:8.3-fpm
+FROM php:8.5-fpm
 
 # set main params
 ARG BUILD_ARGUMENT_ENV=dev
@@ -41,7 +41,10 @@ RUN apt-get update && apt-get upgrade -y && apt-get install -y \
 
 # install composer
 COPY --from=composer:latest /usr/bin/composer /usr/bin/composer
-RUN chmod +x /usr/bin/composer
+RUN chmod +x /usr/bin/composerdocker compose down
+docker compose build --no-cache
+docker compose up -d
+
 ENV COMPOSER_ALLOW_SUPERUSER 1
 
 # Enable Composer autocompletion
