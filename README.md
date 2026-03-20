@@ -43,7 +43,7 @@ templates/
 └── user/
     └── profile.html.twig
 ```
-
+ 
 ### Images des produits
 Les images sont dans public/images/ :
 public/
