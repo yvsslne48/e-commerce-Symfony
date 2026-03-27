@@ -45,6 +45,7 @@ templates/
 ```
  
 ### Images des produits
+```
 Les images sont dans public/images/ :
 public/
 └── images/
@@ -55,7 +56,7 @@ public/
     ├── ...
     ├── ...
     └── yoga-mat.png
-
+```
 ### Lancer le projet (sans BDD)
 
 ```bash
@@ -71,7 +72,7 @@ symfony serve
 
 - **Category** : `id`, `name`, `description`, `badgeColor`
 - **Product** : `id`, `name`, `description`, `price`, `sku`, `inStock`, `image`, `category`
-- Relation : `Product` -> `ManyToOne` -> `Category`
+- **Relation** : `Product` -> `ManyToOne` -> `Category`
 
 ### Structure ajoutée
 
