@@ -2,14 +2,11 @@
 
 namespace App\Cart;
 
+use App\DTO\Cart;
+use App\DTO\CartItem;
 use App\Cart\CartInterface;
 use Symfony\Component\HttpFoundation\RequestStack;
 
-/**
- * SessionCart
- * Stratégie qui gère le panier via la Session Symfony.
- * Implémente CartInterface — respecte le principe de substitution de Liskov.
- */
 class SessionCart implements CartInterface
 {
     private const CART_KEY = 'cart';
@@ -18,66 +15,77 @@ class SessionCart implements CartInterface
         private readonly RequestStack $requestStack
     ) {}
 
-    /**
-     * Ajoute un produit au panier en session.
-     * Si le produit existe déjà, on incrémente la quantité.
-     */
-    public function add(int $productId, int $quantity): void
+    public function add(CartItem $item, Cart $cart): Cart
     {
-        $cart = $this->getItems();
+        $items = $cart->getItems();
 
-        if (isset($cart[$productId])) {
-            $cart[$productId] += $quantity;
-        } else {
-            $cart[$productId] = $quantity;
+        foreach ($items as $existingItem) {
+            if ($existingItem->getProductId() === $item->getProductId()) {
+                $existingItem->setQuantity(
+                    $existingItem->getQuantity() + $item->getQuantity()
+                );
+                $cart->setItems($items);
+                $this->save($cart);
+                return $cart;
+            }
         }
 
+        $items[] = $item;
+        $cart->setItems($items);
         $this->save($cart);
+
+        return $cart;
     }
 
-
-    //   Supprime un produit du panier en session.
-    public function remove(int $productId): void
+    public function remove(CartItem $item, Cart $cart): Cart
     {
-        $cart = $this->getItems();
+        $items = array_filter(
+            $cart->getItems(),
+            fn(CartItem $i) => $i->getProductId() !== $item->getProductId()
+        );
 
-        if (isset($cart[$productId])) {
-            unset($cart[$productId]);
-            $this->save($cart);
-        }
+        $cart->setItems(array_values($items));
+        $this->save($cart);
+
+        return $cart;
     }
 
-    /**
-     * Retourne le contenu du panier depuis la session.
-     * Format : [productId => quantity, ...]
-     */
-    public function getItems(): array
+    public function getCart(string $identifier): Cart
     {
-        return $this->requestStack
+        $data = $this->requestStack
             ->getSession()
-            ->get(self::CART_KEY, []);
+            ->get(self::CART_KEY . '_' . $identifier, []);
+
+        $cart  = new Cart($identifier);
+        $items = array_map(
+            fn(array $d) => new CartItem($d['productId'], $d['quantity']),
+            $data
+        );
+
+        $cart->setItems($items);
+
+        return $cart;
     }
 
-     // Vide complètement le panier en session.
-
-    public function clear(): void
-    {
-        $this->save([]);
-    }
-
-     // Retourne le nombre total d'articles dans le panier.
-
-    public function count(): int
-    {
-        return array_sum($this->getItems());
-    }
-
-     //Sauvegarde le panier en session.
-
-    private function save(array $cart): void
+    public function clearCart(string $identifier): void
     {
         $this->requestStack
             ->getSession()
-            ->set(self::CART_KEY, $cart);
+            ->remove(self::CART_KEY . '_' . $identifier);
+    }
+
+    private function save(Cart $cart): void
+    {
+        $data = array_map(
+            fn(CartItem $item) => [
+                'productId' => $item->getProductId(),
+                'quantity'  => $item->getQuantity(),
+            ],
+            $cart->getItems()
+        );
+
+        $this->requestStack
+            ->getSession()
+            ->set(self::CART_KEY . '_' . $cart->getIdentifier(), $data);
     }
 }

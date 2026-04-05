@@ -2,46 +2,28 @@
 
 namespace App\Cart;
 
-/**
- * Interface CartInterface
- * Définit le comportement que chaque gestionnaire de panier doit suivre.
- * Principe SOLID : Open/Closed — on peut ajouter de nouvelles stratégies
- * sans modifier le code existant.
- */
+use App\DTO\Cart;
+use App\DTO\CartItem;
+
 interface CartInterface
 {
     /**
-     * Ajoute un produit au panier.
-     *
-     * @param int $productId  L'identifiant du produit
-     * @param int $quantity   La quantité à ajouter
+     * Ajoute un CartItem dans le Cart et retourne le Cart mis à jour.
      */
-    public function add(int $productId, int $quantity): void;
+    public function add(CartItem $item, Cart $cart): Cart;
 
     /**
-     * Supprime un produit du panier.
-     *
-     * @param int $productId  L'identifiant du produit à supprimer
+     * Supprime un CartItem du Cart et retourne le Cart mis à jour.
      */
-    public function remove(int $productId): void;
+    public function remove(CartItem $item, Cart $cart): Cart;
 
     /**
-     * Retourne le contenu complet du panier.
-     * Format : [productId => quantity, ...]
-     *
-     * @return array
+     * Récupère le Cart depuis le stockage via son identifiant.
      */
-    public function getItems(): array;
+    public function getCart(string $identifier): Cart;
 
     /**
-     * Vide complètement le panier.
+     * Vide complètement le Cart identifié par son identifiant.
      */
-    public function clear(): void;
-
-    /**
-     * Retourne le nombre total d'articles dans le panier.
-     *
-     * @return int
-     */
-    public function count(): int;
+    public function clearCart(string $identifier): void;
 }

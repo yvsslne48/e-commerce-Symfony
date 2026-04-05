@@ -3,6 +3,8 @@
 namespace App\Controller;
 
 use App\Cart\CartHandler;
+use App\DTO\Cart;
+use App\DTO\CartItem;
 use App\Repository\CategoryRepository;
 use App\Repository\ProductRepository;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
@@ -12,47 +14,40 @@ use Symfony\Component\Routing\Attribute\Route;
 
 class ShopController extends AbstractController
 {
+    private const CART_ID = 'main_cart';
+
     #[Route('/', name: 'app_home')]
     public function index(CategoryRepository $categoryRepository): Response
     {
-        $categories = $categoryRepository->findAllWithProductCount();
-
         return $this->render('home/index.html.twig', [
-            'categories' => $categories,
+            'categories' => $categoryRepository->findAllWithProductCount(),
         ]);
     }
 
     #[Route('/products', name: 'app_products')]
     public function products(CategoryRepository $categoryRepository): Response
     {
-        $categories = $categoryRepository->findAllWithProductCount();
-
         return $this->render('home/index.html.twig', [
-            'categories' => $categories,
+            'categories' => $categoryRepository->findAllWithProductCount(),
         ]);
     }
 
-    #[Route('/login', name: 'app_login')]
-    public function login(): Response
-    {
-        return $this->render('auth/login.html.twig');
-    }
-
+    // #[Route('/login', name: 'app_login')]
+    // public function login(): Response
+    // {
+    //     return $this->render('auth/login.html.twig');
+    // }
     #[Route('/profile', name: 'app_profile')]
     public function profile(): Response
     {
         return $this->render('user/profile.html.twig');
     }
 
-    // ===== CATÉGORIES =====
-
     #[Route('/categories', name: 'app_browse_categories')]
     public function browseCategories(CategoryRepository $categoryRepository): Response
     {
-        $categories = $categoryRepository->findAllWithProductCount();
-
         return $this->render('category/browse.html.twig', [
-            'categories' => $categories,
+            'categories' => $categoryRepository->findAllWithProductCount(),
         ]);
     }
 
@@ -68,11 +63,9 @@ class ShopController extends AbstractController
             throw $this->createNotFoundException('Catégorie introuvable.');
         }
 
-        $products = $productRepository->findByCategory($id);
-
         return $this->render('category/products.html.twig', [
             'category' => $category,
-            'products' => $products,
+            'products' => $productRepository->findByCategory($id),
         ]);
     }
 
@@ -92,25 +85,23 @@ class ShopController extends AbstractController
         ]);
     }
 
-    // ===== PANIER =====
-
     #[Route('/cart', name: 'app_cart')]
     public function cart(
         CartHandler $cartHandler,
         ProductRepository $productRepository
     ): Response {
-        $items    = $cartHandler->getItems();
+        $cart     = $cartHandler->getCart(self::CART_ID);
         $products = [];
         $total    = 0;
 
-        foreach ($items as $productId => $quantity) {
-            $product = $productRepository->find($productId);
+        foreach ($cart->getItems() as $cartItem) {
+            $product = $productRepository->find($cartItem->getProductId());
             if ($product) {
-                $subtotal   = $product->getPrice() * $quantity;
+                $subtotal   = $product->getPrice() * $cartItem->getQuantity();
                 $total     += $subtotal;
                 $products[] = [
                     'product'  => $product,
-                    'quantity' => $quantity,
+                    'quantity' => $cartItem->getQuantity(),
                     'subtotal' => $subtotal,
                 ];
             }
@@ -136,7 +127,10 @@ class ShopController extends AbstractController
         }
 
         $quantity = max(1, (int) $request->request->get('quantity', 1));
-        $cartHandler->add($id, $quantity);
+        $cartItem = new CartItem($id, $quantity);
+        $cart     = $cartHandler->getCart(self::CART_ID);
+
+        $cartHandler->handle($cart, 'add', $cartItem);
 
         $this->addFlash('success', sprintf('"%s" ajouté au panier.', $product->getName()));
 
@@ -148,7 +142,10 @@ class ShopController extends AbstractController
         int $id,
         CartHandler $cartHandler
     ): Response {
-        $cartHandler->remove($id);
+        $cartItem = new CartItem($id, 0);
+        $cart     = $cartHandler->getCart(self::CART_ID);
+
+        $cartHandler->handle($cart, 'remove', $cartItem);
 
         $this->addFlash('success', 'Produit retiré du panier.');
 
@@ -158,7 +155,7 @@ class ShopController extends AbstractController
     #[Route('/cart/clear', name: 'app_cart_clear')]
     public function clearCart(CartHandler $cartHandler): Response
     {
-        $cartHandler->clear();
+        $cartHandler->clearCart(self::CART_ID);
 
         $this->addFlash('success', 'Panier vidé.');
 
