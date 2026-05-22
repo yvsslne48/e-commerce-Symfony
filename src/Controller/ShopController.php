@@ -2,53 +2,52 @@
 
 namespace App\Controller;
 
+use App\Cart\CartHandler;
+use App\DTO\Cart;
+use App\DTO\CartItem;
 use App\Repository\CategoryRepository;
 use App\Repository\ProductRepository;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
+use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Attribute\Route;
 
 class ShopController extends AbstractController
 {
+    private const CART_ID = 'main_cart';
+
     #[Route('/', name: 'app_home')]
-    public function index(): Response
+    public function index(CategoryRepository $categoryRepository): Response
     {
-        return $this->render('home/index.html.twig');
+        return $this->render('home/index.html.twig', [
+            'categories' => $categoryRepository->findAllWithProductCount(),
+        ]);
     }
 
     #[Route('/products', name: 'app_products')]
-    public function products(): Response
+    public function products(CategoryRepository $categoryRepository): Response
     {
-        return $this->render('home/index.html.twig');
+        return $this->render('home/index.html.twig', [
+            'categories' => $categoryRepository->findAllWithProductCount(),
+        ]);
     }
 
-    #[Route('/login', name: 'app_login')]
-    public function login(): Response
-    {
-        return $this->render('auth/login.html.twig');
-    }
-
+    // #[Route('/login', name: 'app_login')]
+    // public function login(): Response
+    // {
+    //     return $this->render('auth/login.html.twig');
+    // }
     #[Route('/profile', name: 'app_profile')]
     public function profile(): Response
     {
         return $this->render('user/profile.html.twig');
     }
 
-    #[Route('/cart', name: 'app_cart')]
-    public function cart(): Response
-    {
-        return $this->render('cart/index.html.twig');
-    }
-
-    // ===== PAGES DYNAMISÉES =====
-
     #[Route('/categories', name: 'app_browse_categories')]
     public function browseCategories(CategoryRepository $categoryRepository): Response
     {
-        $categories = $categoryRepository->findAllWithProductCount();
-
         return $this->render('category/browse.html.twig', [
-            'categories' => $categories,
+            'categories' => $categoryRepository->findAllWithProductCount(),
         ]);
     }
 
@@ -64,11 +63,9 @@ class ShopController extends AbstractController
             throw $this->createNotFoundException('Catégorie introuvable.');
         }
 
-        $products = $productRepository->findByCategory($id);
-
         return $this->render('category/products.html.twig', [
             'category' => $category,
-            'products' => $products,
+            'products' => $productRepository->findByCategory($id),
         ]);
     }
 
@@ -86,5 +83,82 @@ class ShopController extends AbstractController
         return $this->render('product/details.html.twig', [
             'product' => $product,
         ]);
+    }
+
+    #[Route('/cart', name: 'app_cart')]
+    public function cart(
+        CartHandler $cartHandler,
+        ProductRepository $productRepository
+    ): Response {
+        $cart     = $cartHandler->getCart(self::CART_ID);
+        $products = [];
+        $total    = 0;
+
+        foreach ($cart->getItems() as $cartItem) {
+            $product = $productRepository->find($cartItem->getProductId());
+            if ($product) {
+                $subtotal   = $product->getPrice() * $cartItem->getQuantity();
+                $total     += $subtotal;
+                $products[] = [
+                    'product'  => $product,
+                    'quantity' => $cartItem->getQuantity(),
+                    'subtotal' => $subtotal,
+                ];
+            }
+        }
+
+        return $this->render('cart/index.html.twig', [
+            'cartItems' => $products,
+            'total'     => $total,
+        ]);
+    }
+
+    #[Route('/cart/add/{id}', name: 'app_cart_add', requirements: ['id' => '\d+'], methods: ['POST'])]
+    public function addToCart(
+        int $id,
+        Request $request,
+        CartHandler $cartHandler,
+        ProductRepository $productRepository
+    ): Response {
+        $product = $productRepository->find($id);
+
+        if (!$product) {
+            throw $this->createNotFoundException('Produit introuvable.');
+        }
+
+        $quantity = max(1, (int) $request->request->get('quantity', 1));
+        $cartItem = new CartItem($id, $quantity);
+        $cart     = $cartHandler->getCart(self::CART_ID);
+
+        $cartHandler->handle($cart, 'add', $cartItem);
+
+        $this->addFlash('success', sprintf('"%s" ajouté au panier.', $product->getName()));
+
+        return $this->redirectToRoute('app_product_details', ['id' => $id]);
+    }
+
+    #[Route('/cart/remove/{id}', name: 'app_cart_remove', requirements: ['id' => '\d+'])]
+    public function removeFromCart(
+        int $id,
+        CartHandler $cartHandler
+    ): Response {
+        $cartItem = new CartItem($id, 0);
+        $cart     = $cartHandler->getCart(self::CART_ID);
+
+        $cartHandler->handle($cart, 'remove', $cartItem);
+
+        $this->addFlash('success', 'Produit retiré du panier.');
+
+        return $this->redirectToRoute('app_cart');
+    }
+
+    #[Route('/cart/clear', name: 'app_cart_clear')]
+    public function clearCart(CartHandler $cartHandler): Response
+    {
+        $cartHandler->clearCart(self::CART_ID);
+
+        $this->addFlash('success', 'Panier vidé.');
+
+        return $this->redirectToRoute('app_cart');
     }
 }

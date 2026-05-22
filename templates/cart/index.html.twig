@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+{# <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
@@ -10,17 +10,17 @@
     <!-- Header -->
     <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
         <div class="container">
-            <a class="navbar-brand" href="index.html">Our Store</a>
+            <a class="navbar-brand" href="{{ path('app_home') }}">Our Store</a>
             <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
                 <span class="navbar-toggler-icon"></span>
             </button>
             <div class="collapse navbar-collapse" id="navbarNav">
                 <ul class="navbar-nav ms-auto">
                     <li class="nav-item">
-                        <a class="nav-link" href="index.html">Products</a>
+                        <a class="nav-link" href="{{ path('app_home') }}">Products</a>
                     </li>
                     <li class="nav-item">
-                        <a class="nav-link active" href="cart.html">Cart</a>
+                        <a class="nav-link active" href="{{ path('app_cart') }}">Cart</a>
                     </li>
                 </ul>
             </div>
@@ -110,7 +110,7 @@
                     </div>
                 </div>
 
-                <a href="index.html" class="btn btn-outline-primary">
+                <a href="{{ path('app_home') }}" class="btn btn-outline-primary">
                     <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-arrow-left" viewBox="0 0 16 16">
                         <path fill-rule="evenodd" d="M15 8a.5.5 0 0 0-.5-.5H2.707l3.147-3.146a.5.5 0 1 0-.708-.708l-4 4a.5.5 0 0 0 0 .708l4 4a.5.5 0 0 0 .708-.708L2.707 8.5H14.5A.5.5 0 0 0 15 8z"/>
                     </svg>
@@ -181,4 +181,134 @@
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 </body>
-</html>
+</html> #}
+
+{# replace all code for replace paege static #}
+
+{% extends 'base.html.twig' %}
+
+{% block title %}Shopping Cart - Our Store{% endblock %}
+{% block nav_cart %}active{% endblock %}
+
+{% block body %}
+<div class="container my-5">
+    <h1 class="mb-4">Shopping Cart</h1>
+
+    {% for message in app.flashes('success') %}
+        <div class="alert alert-success alert-dismissible fade show" role="alert">
+            {{ message }}
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+    {% endfor %}
+
+    {% if cartItems is empty %}
+        <div class="alert alert-info text-center py-5">
+            <h4>Votre panier est vide</h4>
+            <a href="{{ path('app_browse_categories') }}" class="btn btn-primary mt-3">
+                Continuer les achats
+            </a>
+        </div>
+    {% else %}
+    <div class="row">
+        <div class="col-lg-8">
+            <div class="card mb-3">
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table align-middle">
+                            <thead>
+                                <tr>
+                                    <th>Produit</th>
+                                    <th>Prix</th>
+                                    <th>Quantité</th>
+                                    <th>Total</th>
+                                    <th></th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for item in cartItems %}
+                                <tr>
+                                    <td>
+                                        <div class="d-flex align-items-center">
+                                            {% if item.product.image %}
+                                            <img src="/images/{{ item.product.image }}"
+                                                 class="img-thumbnail me-3"
+                                                 style="width: 80px; height: 80px; object-fit: cover;"
+                                                 alt="{{ item.product.name }}">
+                                            {% else %}
+                                            <div class="bg-light me-3 d-flex align-items-center justify-content-center"
+                                                 style="width: 80px; height: 80px;">
+                                                <span class="text-muted">📦</span>
+                                            </div>
+                                            {% endif %}
+                                            <div>
+                                                <h6 class="mb-0">{{ item.product.name }}</h6>
+                                                <small class="text-muted">{{ item.product.category.name }}</small>
+                                            </div>
+                                        </div>
+                                    </td>
+                                    <td>${{ item.product.price }}</td>
+                                    <td>{{ item.quantity }}</td>
+                                    <td class="fw-bold text-success">${{ item.subtotal|number_format(2) }}</td>
+                                    <td>
+                                        <a href="{{ path('app_cart_remove', {id: item.product.id}) }}"
+                                           class="btn btn-sm btn-outline-danger">Retirer</a>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+            <div class="d-flex justify-content-between">
+                <a href="{{ path('app_browse_categories') }}" class="btn btn-outline-primary">
+                    ← Continuer les achats
+                </a>
+                <a href="{{ path('app_cart_clear') }}" class="btn btn-outline-danger"
+                   onclick="return confirm('Vider le panier ?')">
+                    🗑 Vider le panier
+                </a>
+            </div>
+        </div>
+        <div class="col-lg-4">
+            <div class="card">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="mb-0">Récapitulatif</h5>
+                </div>
+                <div class="card-body">
+                    <div class="d-flex justify-content-between mb-2">
+                        <span>Sous-total :</span>
+                        <span>${{ total|number_format(2) }}</span>
+                    </div>
+                    <div class="d-flex justify-content-between mb-2">
+                        <span>Livraison :</span>
+                        <span>
+                            {% if total >= 50 %}
+                                <span class="text-success">Gratuite</span>
+                            {% else %}
+                                $10.00
+                            {% endif %}
+                        </span>
+                    </div>
+                    <hr>
+                    <div class="d-flex justify-content-between mb-3">
+                        <strong>Total :</strong>
+                        <strong class="text-success">
+                            ${{ (total >= 50 ? total : total + 10)|number_format(2) }}
+                        </strong>
+                    </div>
+                    <div class="d-grid">
+                        <button class="btn btn-success btn-lg">Passer la commande</button>
+                    </div>
+                    {% if total < 50 %}
+                    <p class="text-muted text-center mt-2 small">
+                        Plus que ${{ (50 - total)|number_format(2) }} pour la livraison gratuite !
+                    </p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}
