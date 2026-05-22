@@ -33,6 +33,11 @@ class RegistrationFormType extends AbstractType
                     new NotBlank(['message' => "L'email est requis."]),
                 ],
             ])
+            ->add('phone', TextType::class, [
+                'label'    => 'Phone Number',
+                'required' => false,
+                'attr'     => ['placeholder' => 'ex: +212 762762846'],
+            ])
             ->add('plainPassword', RepeatedType::class, [
                 'type'            => PasswordType::class,
                 'mapped'          => false,

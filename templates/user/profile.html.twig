@@ -245,14 +245,14 @@
             <div class="card">
                 <div class="card-body text-center">
                     <img src="/images/profile.png" class="rounded-circle mb-3" alt="Avatar" width="150" height="150">
-                    <h5 class="card-title">Yassine Amrani</h5>
-                    <p class="text-muted">yassineamrani.dev@email.com</p>
+                    <h5 class="card-title">{{ app.user.fullName }}</h5>
+                    <p class="text-muted">{{ app.user.email }}</p>
                     <hr>
                     <ul class="list-unstyled">
                         <li class="mb-2"><a href="#profile" class="text-decoration-none">Profile Information</a></li>
                         <li class="mb-2"><a href="#orders" class="text-decoration-none">My Orders</a></li>
                         <li class="mb-2"><a href="#" class="text-decoration-none">Settings</a></li>
-                        <li class="mb-2"><a href="{{ path('app_login') }}" class="text-decoration-none text-danger">Logout</a></li>
+                        <li class="mb-2"><a href="{{ path('app_logout') }}" class="text-decoration-none text-danger">Logout</a></li>
                     </ul>
                 </div>
             </div>
@@ -262,12 +262,16 @@
                 <div class="card-header bg-primary text-white"><h5 class="mb-0">Profile Information</h5></div>
                 <div class="card-body">
                     <div class="row mb-3">
-                        <div class="col-md-6"><label class="fw-bold">Full Name:</label><p>Yassine Amrani</p></div>
-                        <div class="col-md-6"><label class="fw-bold">Email:</label><p>yassineamrani.dev@email.com</p></div>
+                        <div class="col-md-6"><label class="fw-bold">Full Name:</label><p>{{ app.user.fullName }}</p></div>
+                        <div class="col-md-6"><label class="fw-bold">Email:</label><p>{{ app.user.email }}</p></div>
                     </div>
                     <div class="row mb-3">
-                        <div class="col-md-6"><label class="fw-bold">Phone:</label><p>+212 762762846 </p></div>
-                        <div class="col-md-6"><label class="fw-bold">Member Since:</label><p>January 15, 2026</p></div>
+                        <div class="col-md-6"><label class="fw-bold">Phone:</label>
+                            <p>{{ app.user.phone ?? 'Not provided' }}</p>
+                        </div>
+                        <div class="col-md-6"><label class="fw-bold">Member Since:</label>
+                            <p>{{ app.user.createdAt|date('F d, Y') }}</p>
+                        </div>
                     </div>
                     <button class="btn btn-outline-primary">Edit Profile</button>
                 </div>
